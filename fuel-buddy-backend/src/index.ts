@@ -1,18 +1,20 @@
-// Load env variables
-require('dotenv').config();
+import 'dotenv/config';
+import express, { Request, Response } from 'express';
+import taskRouter from './api/Task';
 
-const express = require('express');
 const app = express();
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware to parse JSON
 app.use(express.json());
 
 // Basic route
-app.get('/', (req: any, res: any) => {
-  res.send('Hello, World! 🎉');
+app.get('/', (req: Request, res: Response) => {
+  res.send('Task Management API');
 });
+
+// Mount task routes
+app.use('/task', taskRouter);
 
 // Start the server
 app.listen(PORT, () => {
