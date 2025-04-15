@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <h2 class="login-title">Sign in to your account</h2>
+      <h2 class="login-title">Create an account</h2>
       <form class="login-form" @submit.prevent="handleSubmit">
         <div class="input-group">
           <input
@@ -19,23 +19,33 @@
             v-model="password"
             name="password"
             type="password"
-            autocomplete="current-password"
+            autocomplete="new-password"
             required
             class="input-field"
             placeholder="Password"
           />
+          <input
+            id="confirm-password"
+            v-model="confirmPassword"
+            name="confirm-password"
+            type="password"
+            autocomplete="new-password"
+            required
+            class="input-field"
+            placeholder="Confirm Password"
+          />
         </div>
 
         <button type="submit" class="submit-button">
-          Sign in
+          Register
         </button>
 
-        <div v-if="error" class="text-red-500 text-center">
+        <div v-if="error" class="error-message">
           {{ error }}
         </div>
 
-        <div class="register-link">
-          Don't have an account? <router-link to="/register">Register</router-link>
+        <div class="login-link">
+          Already have an account? <router-link to="/login">Sign in</router-link>
         </div>
       </form>
     </div>
@@ -48,13 +58,18 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 
 const router = useRouter();
-const { login, error } = useAuth();
+const { register, error } = useAuth();
 
 const email = ref('');
 const password = ref('');
+const confirmPassword = ref('');
 
 const handleSubmit = async () => {
-  await login(email.value, password.value);
+  if (password.value !== confirmPassword.value) {
+    error.value = 'Passwords do not match';
+    return;
+  }
+  await register(email.value, password.value);
   if (!error.value) {
     router.push('/');
   }
@@ -139,19 +154,25 @@ const handleSubmit = async () => {
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
-.register-link {
+.error-message {
+  text-align: center;
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.login-link {
   text-align: center;
   font-size: 0.875rem;
   color: #6b7280;
 }
 
-.register-link a {
+.login-link a {
   color: #4f46e5;
   text-decoration: none;
   font-weight: 500;
 }
 
-.register-link a:hover {
+.login-link a:hover {
   text-decoration: underline;
 }
 </style> 
