@@ -2,17 +2,19 @@ import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import Task from '../models/Task';
 
-export const createTask: RequestHandler = async (req, res) => {
+export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, dueDate, userId } = req.body;
+    const { title, description, dueDate } = req.body;
+    
+    // Get userId from authenticated user
+    const userId = req.user?.uid;
     
     // Create task without specifying id (let the database auto-increment)
     const task = await Task.create({
       title,
       description: description || null,
       dueDate,
-      userId: userId || null,
-      // Explicitly exclude id to avoid unique violation
+      userId,  // Always use the authenticated user's ID
     });
     
     res.status(201).json(task);
