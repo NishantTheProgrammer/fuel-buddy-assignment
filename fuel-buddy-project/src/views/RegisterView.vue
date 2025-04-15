@@ -5,6 +5,16 @@
       <form class="login-form" @submit.prevent="handleSubmit">
         <div class="input-group">
           <input
+            id="name"
+            v-model="name"
+            name="name"
+            type="text"
+            autocomplete="name"
+            required
+            class="input-field"
+            placeholder="Name"
+          />
+          <input
             id="email-address"
             v-model="email"
             name="email"
@@ -36,8 +46,8 @@
           />
         </div>
 
-        <button type="submit" class="submit-button">
-          Register
+        <button type="submit" class="submit-button" :disabled="loading">
+          {{ loading ? 'Registering...' : 'Register' }}
         </button>
 
         <div v-if="error" class="error-message">
@@ -60,18 +70,26 @@ import { useAuth } from '../composables/useAuth';
 const router = useRouter();
 const { register, error } = useAuth();
 
+const name = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const loading = ref(false);
 
 const handleSubmit = async () => {
   if (password.value !== confirmPassword.value) {
     error.value = 'Passwords do not match';
     return;
   }
-  await register(email.value, password.value);
-  if (!error.value) {
+
+  try {
+    loading.value = true;
+    await register(name.value, email.value, password.value);
     router.push('/');
+  } catch (e) {
+    error.value = (e as Error).message;
+  } finally {
+    loading.value = false;
   }
 };
 </script>

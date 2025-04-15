@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 
 import taskRoutes from './routes/taskRoutes';
+import userRoutes from './routes/userRoutes';
 import sequelize from './config/database';
 import { syncDatabase } from './models';
 
@@ -20,8 +21,9 @@ app.use(express.json());
 //   res.send('Task Management API');
 // });
 
-// Mount task routes
+// Mount routes
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
 
 sequelize.authenticate()
   .then(() => {
