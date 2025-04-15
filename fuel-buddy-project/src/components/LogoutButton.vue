@@ -4,21 +4,26 @@
   </button>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 
-const router = useRouter();
-const { logout } = useAuth();
+export default {
+  name: 'LogoutButton',
+  setup() {
+    const router = useRouter();
+    const { logout } = useAuth();
 
-const handleLogout = async () => {
-  await logout();
-  router.push('/login');
+    const handleLogout = async () => {
+      await logout();
+      router.push('/login');
+    };
+
+    return {
+      handleLogout
+    };
+  }
 };
-
-defineOptions({
-  name: 'LogoutButton'
-});
 </script>
 
 <style scoped>
