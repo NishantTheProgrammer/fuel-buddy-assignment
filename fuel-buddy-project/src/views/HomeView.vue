@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useTaskStore } from '../stores/task';
 import LogoutButton from '../components/LogoutButton.vue';
@@ -12,12 +12,16 @@ const userEmail = computed(() => {
   return user.value?.email || 'Guest';
 });
 
-const handleAddTask = () => {
+const handleAddTask = async () => {
   if (newTaskTitle.value.trim()) {
-    taskStore.addTask(newTaskTitle.value.trim());
+    await taskStore.addTask(newTaskTitle.value.trim());
     newTaskTitle.value = '';
   }
 };
+
+onMounted(() => {
+  taskStore.fetchTasks();
+});
 </script>
 
 <template>
@@ -40,28 +44,47 @@ const handleAddTask = () => {
             type="text"
             placeholder="Add a new task..."
             class="task-input"
+            :disabled="taskStore.loading"
           />
-          <button @click="handleAddTask" class="add-button">Add Task</button>
+          <button 
+            @click="handleAddTask" 
+            class="add-button"
+            :disabled="taskStore.loading"
+          >
+            {{ taskStore.loading ? 'Adding...' : 'Add Task' }}
+          </button>
+        </div>
+
+        <div v-if="taskStore.error" class="error-message">
+          {{ taskStore.error }}
         </div>
 
         <div class="task-list">
-          <div v-for="task in taskStore.tasks" :key="task.id" class="task-item">
+          <div v-if="taskStore.loading && !taskStore.tasks.length" class="loading-message">
+            Loading tasks...
+          </div>
+          <div v-else-if="!taskStore.loading && !taskStore.tasks.length" class="no-tasks">
+            No tasks yet. Add one above!
+          </div>
+          <div v-else v-for="task in taskStore.tasks" :key="task.id" class="task-item">
             <input
               type="checkbox"
-              :checked="task.completed"
+              :checked="task.status === 'completed'"
               @change="taskStore.toggleTask(task.id)"
               class="task-checkbox"
+              :disabled="taskStore.loading"
             />
-            <span :class="{ 'completed': task.completed }" class="task-title">
+            <span :class="{ 'completed': task.status === 'completed' }" class="task-title">
               {{ task.title }}
             </span>
-            <button @click="taskStore.deleteTask(task.id)" class="delete-button">
+            <button 
+              @click="taskStore.deleteTask(task.id)" 
+              class="delete-button"
+              :disabled="taskStore.loading"
+            >
               Delete
             </button>
           </div>
-          <p v-if="taskStore.tasks.length === 0" class="no-tasks">
-            No tasks yet. Add one above!
-          </p>
         </div>
       </div>
     </main>
@@ -134,6 +157,11 @@ const handleAddTask = () => {
   font-size: 0.875rem;
 }
 
+.task-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
 .add-button {
   padding: 0.5rem 1rem;
   background-color: #4f46e5;
@@ -145,8 +173,30 @@ const handleAddTask = () => {
   transition: background-color 0.15s;
 }
 
-.add-button:hover {
+.add-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.add-button:not(:disabled):hover {
   background-color: #4338ca;
+}
+
+.error-message {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.loading-message {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  padding: 1rem;
 }
 
 .task-list {
@@ -168,6 +218,10 @@ const handleAddTask = () => {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
+}
+
+.task-checkbox:disabled {
+  cursor: not-allowed;
 }
 
 .task-title {
@@ -192,7 +246,12 @@ const handleAddTask = () => {
   transition: background-color 0.15s;
 }
 
-.delete-button:hover {
+.delete-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.delete-button:not(:disabled):hover {
   background-color: #dc2626;
 }
 

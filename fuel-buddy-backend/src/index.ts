@@ -1,14 +1,16 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
-
+import cors from 'cors';
 
 import taskRoutes from './routes/taskRoutes';
 import sequelize from './config/database';
 import { syncDatabase } from './models';
 
-
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Apply CORS first, before any other middleware
+app.use(cors());
 
 // Middleware to parse JSON
 app.use(express.json());
@@ -20,7 +22,6 @@ app.use(express.json());
 
 // Mount task routes
 app.use('/api/tasks', taskRoutes);
-
 
 sequelize.authenticate()
   .then(() => {

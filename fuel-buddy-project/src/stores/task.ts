@@ -1,39 +1,87 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { taskService } from '../services/taskService'
 
 export interface Task {
-  id: string
+  id: number
   title: string
-  completed: boolean
-  createdAt: Date
+  description?: string
+  status: 'pending' | 'completed'
+  dueDate?: Date
+  userId?: number
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref<Task[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  function addTask(title: string) {
-    const task: Task = {
-      id: crypto.randomUUID(),
-      title,
-      completed: false,
-      createdAt: new Date()
+  async function fetchTasks() {
+    loading.value = true
+    error.value = null
+    try {
+      tasks.value = await taskService.getTasks()
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      loading.value = false
     }
-    tasks.value.push(task)
   }
 
-  function toggleTask(id: string) {
+  async function addTask(title: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const task = await taskService.createTask(title)
+      tasks.value.push(task)
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function toggleTask(id: number) {
     const task = tasks.value.find(t => t.id === id)
-    if (task) {
-      task.completed = !task.completed
+    if (!task) return
+
+    loading.value = true
+    error.value = null
+    try {
+      const updatedTask = await taskService.updateTask(id, { 
+        status: task.status === 'completed' ? 'pending' : 'completed'
+      })
+      const index = tasks.value.findIndex(t => t.id === id)
+      if (index !== -1) {
+        tasks.value[index] = updatedTask
+      }
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      loading.value = false
     }
   }
 
-  function deleteTask(id: string) {
-    tasks.value = tasks.value.filter(t => t.id !== id)
+  async function deleteTask(id: number) {
+    loading.value = true
+    error.value = null
+    try {
+      await taskService.deleteTask(id)
+      tasks.value = tasks.value.filter(t => t.id !== id)
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
     tasks,
+    loading,
+    error,
+    fetchTasks,
     addTask,
     toggleTask,
     deleteTask

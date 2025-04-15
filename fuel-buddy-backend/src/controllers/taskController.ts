@@ -8,23 +8,25 @@ export const createTask: RequestHandler = async (req, res) => {
       title,
       description,
       dueDate,
-      userId,
+      userId: userId || null,
     });
     res.status(201).json(task);
   } catch (error) {
-    res.status(400).json({ error: 'Failed to create task' });
+    console.log('Create task error:', error);
+    res.status(400).json({ error: 'Failed to create taskssss' });
   }
 };
 
 export const getTasks: RequestHandler = async (req, res) => {
-    console.log("getTasks");
+  console.log("getTasks called");
   try {
     const { userId } = req.query;
     const where = userId ? { userId } : {};
     const tasks = await Task.findAll({ where });
+    console.log("Tasks found:", tasks.length);
     res.json(tasks);
   } catch (error) {
-    console.log(error);
+    console.error('Get tasks error:', error);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
@@ -38,6 +40,7 @@ export const getTaskById: RequestHandler = async (req, res) => {
     }
     res.json(task);
   } catch (error) {
+    console.error('Get task by id error:', error);
     res.status(500).json({ error: 'Failed to fetch task' });
   }
 };
@@ -61,6 +64,7 @@ export const updateTask: RequestHandler = async (req, res) => {
 
     res.json(task);
   } catch (error) {
+    console.error('Update task error:', error);
     res.status(400).json({ error: 'Failed to update task' });
   }
 };
@@ -77,6 +81,7 @@ export const deleteTask: RequestHandler = async (req, res) => {
     await task.destroy();
     res.status(204).send();
   } catch (error) {
+    console.error('Delete task error:', error);
     res.status(500).json({ error: 'Failed to delete task' });
   }
 }; 
