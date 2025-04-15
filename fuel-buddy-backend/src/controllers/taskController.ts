@@ -4,16 +4,20 @@ import Task from '../models/Task';
 export const createTask: RequestHandler = async (req, res) => {
   try {
     const { title, description, dueDate, userId } = req.body;
+    
+    // Create task without specifying id (let the database auto-increment)
     const task = await Task.create({
       title,
-      description,
+      description: description || null,
       dueDate,
       userId: userId || null,
+      // Explicitly exclude id to avoid unique violation
     });
+    
     res.status(201).json(task);
   } catch (error) {
-    console.log('Create task error:', error);
-    res.status(400).json({ error: 'Failed to create taskssss' });
+    console.error('Create task error:', error);
+    res.status(400).json({ error: 'Failed to create task' });
   }
 };
 

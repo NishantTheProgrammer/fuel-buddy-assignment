@@ -18,8 +18,8 @@ export const taskService = {
     return response.data;
   },
 
-  async createTask(title: string): Promise<Task> {
-    const response = await api.post('/', { title });
+  async createTask(title: string, description?: string): Promise<Task> {
+    const response = await api.post('/', { title, description });
     return response.data;
   },
 

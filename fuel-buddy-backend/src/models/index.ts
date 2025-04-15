@@ -9,8 +9,8 @@ Task.belongsTo(User, { foreignKey: 'userId' });
 // Sync all models
 const syncDatabase = async () => {
   try {
+    // Use force: true to drop and recreate tables (WARNING: this will delete all data)
     await sequelize.sync({ alter: true });
-    console.log('Database synced successfully');
   } catch (error) {
     console.error('Error syncing database:', error);
   }

@@ -30,11 +30,11 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  async function addTask(title: string) {
+  async function addTask(title: string, description?: string) {
     loading.value = true
     error.value = null
     try {
-      const task = await taskService.createTask(title)
+      const task = await taskService.createTask(title, description)
       tasks.value.push(task)
     } catch (e) {
       error.value = (e as Error).message
@@ -53,6 +53,22 @@ export const useTaskStore = defineStore('task', () => {
       const updatedTask = await taskService.updateTask(id, { 
         status: task.status === 'completed' ? 'pending' : 'completed'
       })
+      const index = tasks.value.findIndex(t => t.id === id)
+      if (index !== -1) {
+        tasks.value[index] = updatedTask
+      }
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateTask(id: number, updates: Partial<Task>) {
+    loading.value = true
+    error.value = null
+    try {
+      const updatedTask = await taskService.updateTask(id, updates)
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
         tasks.value[index] = updatedTask
@@ -84,6 +100,7 @@ export const useTaskStore = defineStore('task', () => {
     fetchTasks,
     addTask,
     toggleTask,
+    updateTask,
     deleteTask
   }
 }) 
