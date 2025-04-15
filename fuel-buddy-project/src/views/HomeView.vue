@@ -2,13 +2,22 @@
 import { computed, ref, onMounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useTaskStore } from '../stores/task';
+import type { Task } from '../stores/task';
 import LogoutButton from '../components/LogoutButton.vue';
 
 const { user } = useAuth();
 const taskStore = useTaskStore();
 const newTaskTitle = ref('');
 const newTaskDescription = ref('');
-const editingTask = ref<{ id: number; title: string; description: string; status: 'pending' | 'completed' } | null>(null);
+const newTaskAssigneeIds = ref<string[]>([]);
+const availableAssignees = ref<{id: string, name: string}[]>([]);
+const editingTask = ref<{ 
+  id: number; 
+  title: string; 
+  description: string; 
+  status: 'pending' | 'completed';
+  assigneeIds: string[];
+} | null>(null);
 
 const userEmail = computed(() => {
   return user.value?.email || 'Guest';
@@ -16,9 +25,14 @@ const userEmail = computed(() => {
 
 const handleAddTask = async () => {
   if (newTaskTitle.value.trim()) {
-    await taskStore.addTask(newTaskTitle.value.trim(), newTaskDescription.value.trim());
+    await taskStore.addTask(
+      newTaskTitle.value.trim(), 
+      newTaskDescription.value.trim(),
+      newTaskAssigneeIds.value
+    );
     newTaskTitle.value = '';
     newTaskDescription.value = '';
+    newTaskAssigneeIds.value = [];
   }
 };
 
@@ -27,7 +41,8 @@ const startEditing = (task: any) => {
     id: task.id,
     title: task.title,
     description: task.description || '',
-    status: task.status
+    status: task.status,
+    assigneeIds: task.assignees?.map((a: any) => a.id) || []
   };
 };
 
@@ -36,7 +51,8 @@ const saveEdit = async () => {
     await taskStore.updateTask(editingTask.value.id, {
       title: editingTask.value.title,
       description: editingTask.value.description,
-      status: editingTask.value.status
+      status: editingTask.value.status,
+      assigneeIds: editingTask.value.assigneeIds
     });
     editingTask.value = null;
   }
@@ -46,8 +62,17 @@ const cancelEdit = () => {
   editingTask.value = null;
 };
 
-onMounted(() => {
+onMounted(async () => {
   taskStore.fetchTasks();
+  // Fetch available assignees
+  try {
+    const response = await fetch('/api/users');
+    if (response.ok) {
+      availableAssignees.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to fetch assignees:', error);
+  }
 });
 </script>
 
@@ -81,7 +106,24 @@ onMounted(() => {
               class="task-textarea"
               :disabled="taskStore.loading"
             ></textarea>
+            
+            <!-- Add assignee selection -->
+            <div class="assignee-selection">
+              <label>Assignees:</label>
+              <div class="assignee-list">
+                <div v-for="assignee in availableAssignees" :key="assignee.id" class="assignee-item">
+                  <input 
+                    type="checkbox" 
+                    :id="'assignee-' + assignee.id"
+                    v-model="newTaskAssigneeIds" 
+                    :value="assignee.id"
+                  />
+                  <label :for="'assignee-' + assignee.id">{{ assignee.name }}</label>
+                </div>
+              </div>
+            </div>
           </div>
+          
           <button 
             @click="handleAddTask" 
             class="add-button"
@@ -123,8 +165,21 @@ onMounted(() => {
               <div v-if="task.description" class="task-description">
                 {{ task.description }}
               </div>
+              <div class="task-meta">
+                <div class="task-owner">
+                  <span class="meta-label">Owner:</span> 
+                  <span class="meta-value">{{ task.creator?.name || 'Unknown' }}</span>
+                </div>
+                <div class="task-assignees">
+                  <span class="meta-label">Assignees:</span>
+                  <span class="meta-value">
+                    {{ task.assignees?.length ? task.assignees.map(a => a.name).join(', ') : 'None' }}
+                  </span>
+                </div>
+              </div>
               <div class="task-actions">
                 <button 
+                  v-if="task.creator?.id === user?.uid"
                   @click="startEditing(task)" 
                   class="edit-button"
                   :disabled="taskStore.loading"
@@ -132,6 +187,7 @@ onMounted(() => {
                   Edit
                 </button>
                 <button 
+                  v-if="task.creator?.id === user?.uid"
                   @click="taskStore.deleteTask(task.id)" 
                   class="delete-button"
                   :disabled="taskStore.loading"
@@ -161,6 +217,23 @@ onMounted(() => {
                   <option value="completed">Completed</option>
                 </select>
               </div>
+              
+              <!-- Add assignee selection for editing -->
+              <div class="assignee-selection">
+                <label>Assignees:</label>
+                <div class="assignee-list">
+                  <div v-for="assignee in availableAssignees" :key="assignee.id" class="assignee-item">
+                    <input 
+                      type="checkbox" 
+                      :id="'edit-assignee-' + assignee.id"
+                      v-model="editingTask.assigneeIds" 
+                      :value="assignee.id"
+                    />
+                    <label :for="'edit-assignee-' + assignee.id">{{ assignee.name }}</label>
+                  </div>
+                </div>
+              </div>
+              
               <div class="edit-actions">
                 <button @click="saveEdit" class="save-button">Save</button>
                 <button @click="cancelEdit" class="cancel-button">Cancel</button>
@@ -368,6 +441,21 @@ onMounted(() => {
   white-space: pre-wrap;
 }
 
+.task-meta {
+  margin-left: 1.75rem;
+  margin-top: 0.5rem;
+}
+
+.meta-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.meta-value {
+  font-size: 0.875rem;
+  color: #111827;
+}
+
 .task-actions {
   display: flex;
   gap: 0.5rem;
@@ -479,6 +567,23 @@ onMounted(() => {
   color: #6b7280;
   font-size: 0.875rem;
   padding: 1rem;
+}
+
+.assignee-selection {
+  margin-top: 10px;
+}
+
+.assignee-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.assignee-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 </style>
 

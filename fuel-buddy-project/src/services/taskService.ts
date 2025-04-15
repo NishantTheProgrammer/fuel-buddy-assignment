@@ -7,12 +7,12 @@ export const taskService = {
     return response.data;
   },
 
-  async createTask(title: string, description?: string): Promise<Task> {
-    const response = await api.post('/tasks', { title, description });
+  async createTask(title: string, description?: string, assigneeIds?: string[]): Promise<Task> {
+    const response = await api.post('/tasks', { title, description, assigneeIds });
     return response.data;
   },
 
-  async updateTask(id: number, updates: Partial<Task>): Promise<Task> {
+  async updateTask(id: number, updates: Partial<Task> & { assigneeIds?: string[] }): Promise<Task> {
     const response = await api.patch(`/tasks/${id}`, updates);
     return response.data;
   },

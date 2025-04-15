@@ -2,15 +2,23 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { taskService } from '../services/taskService'
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Task {
-  id: number
-  title: string
-  description?: string
-  status: 'pending' | 'completed'
-  dueDate?: Date
-  userId?: number
-  createdAt?: Date
-  updatedAt?: Date
+  id: number;
+  title: string;
+  description?: string;
+  status: 'pending' | 'completed';
+  dueDate?: Date;
+  userId: string;
+  creator?: User;
+  assignees: User[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const useTaskStore = defineStore('task', () => {
@@ -30,11 +38,11 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  async function addTask(title: string, description?: string) {
+  async function addTask(title: string, description?: string, assigneeIds?: string[]) {
     loading.value = true
     error.value = null
     try {
-      const task = await taskService.createTask(title, description)
+      const task = await taskService.createTask(title, description, assigneeIds)
       tasks.value.push(task)
     } catch (e) {
       error.value = (e as Error).message
@@ -64,7 +72,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  async function updateTask(id: number, updates: Partial<Task>) {
+  async function updateTask(id: number, updates: Partial<Task> & { assigneeIds?: string[] }) {
     loading.value = true
     error.value = null
     try {

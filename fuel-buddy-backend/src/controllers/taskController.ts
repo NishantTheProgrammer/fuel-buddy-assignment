@@ -1,23 +1,44 @@
 import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import Task from '../models/Task';
+import User from '../models/User';
+import { Op } from 'sequelize';
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, dueDate } = req.body;
-    
-    // Get userId from authenticated user
+    const { title, description, dueDate, assigneeIds } = req.body;
     const userId = req.user?.uid;
     
-    // Create task without specifying id (let the database auto-increment)
     const task = await Task.create({
       title,
       description: description || null,
       dueDate,
-      userId,  // Always use the authenticated user's ID
+      userId,
+    });
+
+    // Add assignees if provided
+    if (assigneeIds && Array.isArray(assigneeIds)) {
+      // @ts-ignore
+      await task.addAssignees(assigneeIds);
+    }
+    
+    // Fetch the task with assignees
+    const taskWithAssignees = await Task.findByPk(task.id, {
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'assignees',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
     });
     
-    res.status(201).json(task);
+    res.status(201).json(taskWithAssignees);
   } catch (error) {
     console.error('Create task error:', error);
     res.status(400).json({ error: 'Failed to create task' });
@@ -25,43 +46,77 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 };
 
 export const getTasks = async (req: AuthRequest, res: Response) => {
-  console.log("getTasks called");
   try {
+    const userId = req.user?.uid;
     const tasks = await Task.findAll({ 
-      where: { userId: req.user?.uid } 
+      where: {
+        [Op.or]: [
+          { userId }, // Tasks created by user
+          { '$assignees.id$': userId } // Tasks assigned to user
+        ]
+      },
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'assignees',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
     });
-    console.log("Tasks found:", tasks.length);
     res.json(tasks);
   } catch (error) {
-    console.log('Get tasks error:', error);
+    console.error('Get tasks error:', error);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
 
 export const getTaskById: RequestHandler = async (req, res) => {
   try {
-    const task = await Task.findByPk(req.params.id);
+    const task = await Task.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'assignees',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
     if (!task) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
     res.json(task);
   } catch (error) {
-    console.error('Get task by id error:', error);
+    console.log('Get task by id error:', error);
     res.status(500).json({ error: 'Failed to fetch task' });
   }
 };
 
-export const updateTask: RequestHandler = async (req, res) => {
+export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, status, dueDate } = req.body;
+    const { title, description, status, dueDate, assigneeIds } = req.body;
     const task = await Task.findByPk(req.params.id);
     
     if (!task) {
-      res.status(404).json({ error: 'Task not found' });
-      return;
+      return res.status(404).json({ error: 'Task not found' });
     }
 
+    // Check if the user is the owner of the task
+    if (task.userId !== req.user?.uid) {
+      return res.status(403).json({ error: 'You are not authorized to update this task' });
+    }
+
+    // Update basic task info
     await task.update({
       title,
       description,
@@ -69,7 +124,29 @@ export const updateTask: RequestHandler = async (req, res) => {
       dueDate,
     });
 
-    res.json(task);
+    // Update assignees if provided
+    if (assigneeIds && Array.isArray(assigneeIds)) {
+      // @ts-ignore
+      await task.setAssignees(assigneeIds);
+    }
+
+    // Fetch updated task with assignees
+    const updatedTask = await Task.findByPk(task.id, {
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'assignees',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    res.json(updatedTask);
   } catch (error) {
     console.error('Update task error:', error);
     res.status(400).json({ error: 'Failed to update task' });
@@ -83,6 +160,11 @@ export const deleteTask: RequestHandler = async (req, res) => {
     if (!task) {
       res.status(404).json({ error: 'Task not found' });
       return;
+    }
+
+    // Check if the user is the owner of the task
+    if (task.userId !== (req as AuthRequest).user?.uid) {
+      return res.status(403).json({ error: 'You are not authorized to delete this task' });
     }
 
     await task.destroy();
