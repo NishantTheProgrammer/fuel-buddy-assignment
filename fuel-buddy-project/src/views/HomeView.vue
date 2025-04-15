@@ -18,9 +18,27 @@ const editingTask = ref<{
   status: 'pending' | 'completed';
   assigneeIds: string[];
 } | null>(null);
+const taskFilter = ref('all'); // 'all', 'my', 'shared'
 
 const userEmail = computed(() => {
   return user.value?.email || 'Guest';
+});
+
+// Filter tasks based on the selected filter
+const filteredTasks = computed(() => {
+  if (!user.value?.uid) return taskStore.tasks;
+  
+  switch (taskFilter.value) {
+    case 'my':
+      return taskStore.tasks.filter(task => task.creator?.id === user.value?.uid);
+    case 'shared':
+      return taskStore.tasks.filter(task => 
+        task.creator?.id !== user.value?.uid && 
+        task.assignees.some(assignee => assignee.id === user.value?.uid)
+      );
+    default:
+      return taskStore.tasks;
+  }
 });
 
 const handleAddTask = async () => {
@@ -89,6 +107,15 @@ onMounted(async () => {
       <div class="task-section">
         <h2>Your Tasks</h2>
         
+        <div class="task-filter">
+          <label for="task-filter">Filter:</label>
+          <select id="task-filter" v-model="taskFilter" class="filter-select">
+            <option value="all">All Tasks</option>
+            <option value="my">My Tasks</option>
+            <option value="shared">Shared with Me</option>
+          </select>
+        </div>
+        
         <div class="add-task">
           <div class="task-input-group">
             <input
@@ -144,7 +171,7 @@ onMounted(async () => {
           <div v-else-if="!taskStore.loading && !taskStore.tasks.length" class="no-tasks">
             No tasks yet. Add one above!
           </div>
-          <div v-else v-for="task in taskStore.tasks" :key="task.id" class="task-item">
+          <div v-else v-for="task in filteredTasks" :key="task.id" class="task-item">
             <!-- Task in view mode -->
             <div v-if="!editingTask || editingTask.id !== task.id" class="task-content">
               <div class="task-header">
@@ -584,6 +611,21 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.task-filter {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 1rem;
 }
 </style>
 
