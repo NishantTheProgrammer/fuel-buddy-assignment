@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { auth } from '../config/firebase'
+import { auth } from '@/config/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import HomeView from '../views/HomeView.vue'
 
@@ -9,19 +9,13 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
-      meta: { requiresGuest: true }
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: () => import('../views/RegisterView.vue'),
+      component: () => import('@/views/LoginView.vue'),
       meta: { requiresGuest: true }
     },
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: () => import('@/views/HomeView.vue'),
       meta: { requiresAuth: true }
     },
     {

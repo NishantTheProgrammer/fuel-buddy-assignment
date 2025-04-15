@@ -2,3 +2,4 @@
 /dist
 .env
 ca.pem
+serviceAccountKey.json
