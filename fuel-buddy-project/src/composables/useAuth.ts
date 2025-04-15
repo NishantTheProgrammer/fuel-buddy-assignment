@@ -63,15 +63,18 @@ export function useAuth() {
       loading.value = true;
       error.value = null;
       
-      // Create user in Firebase
+      // Create user in Firebase first
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
       
       // Create user in our database
       try {
-        await userService.createUser(name, email);
-      } catch (dbError) {
+        await userService.createUser(name, email, uid);
+      } catch (dbError: any) {
         console.error('Failed to create user in database:', dbError);
-        // Continue even if database creation fails
+        error.value = dbError.response?.data?.error || 'Failed to create user in database';
+        await userCredential.user.delete();
+        return;
       }
     } catch (e) {
       if (e instanceof Error) {

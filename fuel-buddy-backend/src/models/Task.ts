@@ -7,7 +7,7 @@ class Task extends Model {
   public description!: string;
   public status!: 'pending' | 'completed';
   public dueDate!: Date;
-  public userId?: number;
+  public userId!: string;
 }
 
 Task.init(
@@ -34,7 +34,7 @@ Task.init(
       allowNull: true,
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: true,
       references: {
         model: 'Users',

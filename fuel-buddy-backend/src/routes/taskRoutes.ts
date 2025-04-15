@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
 import {
   createTask,
   getTasks,
@@ -9,6 +10,7 @@ import {
 
 const router = Router();
 
+router.use(authenticate);  // Apply auth middleware to all task routes
 router.post('/', createTask);
 router.get('/', getTasks);
 router.get('/:id', getTaskById);

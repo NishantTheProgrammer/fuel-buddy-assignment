@@ -1,4 +1,5 @@
 import { Request, Response, RequestHandler } from 'express';
+import { AuthRequest } from '../middleware/auth';
 import Task from '../models/Task';
 
 export const createTask: RequestHandler = async (req, res) => {
@@ -21,16 +22,16 @@ export const createTask: RequestHandler = async (req, res) => {
   }
 };
 
-export const getTasks: RequestHandler = async (req, res) => {
+export const getTasks = async (req: AuthRequest, res: Response) => {
   console.log("getTasks called");
   try {
-    const { userId } = req.query;
-    const where = userId ? { userId } : {};
-    const tasks = await Task.findAll({ where });
+    const tasks = await Task.findAll({ 
+      where: { userId: req.user?.uid } 
+    });
     console.log("Tasks found:", tasks.length);
     res.json(tasks);
   } catch (error) {
-    console.error('Get tasks error:', error);
+    console.log('Get tasks error:', error);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };

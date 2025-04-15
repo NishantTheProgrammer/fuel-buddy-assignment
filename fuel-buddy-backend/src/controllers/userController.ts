@@ -1,18 +1,24 @@
 import { Request, Response, RequestHandler } from 'express';
+import { AuthRequest } from '../middleware/auth';
 import User from '../models/User';
 
-export const createUser: RequestHandler = async (req, res) => {
+export const createUser: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, id } = req.body;
     
+    if (!id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
     
-    // Create new user
+    // Create new user with Firebase UID as id
     const user = await User.create({
+      id,  // Use provided Firebase UID
       name,
       email
     });
