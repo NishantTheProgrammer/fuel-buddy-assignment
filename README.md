@@ -2,18 +2,6 @@
 
 A task management application with user assignment capabilities.
 
-## Project Structure
-
-- **Frontend**: Vue.js application in `fuel-buddy-project/`
-- **Backend**: Node.js with Express and Sequelize in `fuel-buddy-backend/`
-
-## Database Schema
-
-The application uses a relational database with the following structure:
-
-- **Users**: Store user information
-- **Tasks**: Store task details with creator reference
-- **TaskAssignees**: Junction table for task-user assignments
 
 ## Getting Started
 
@@ -32,6 +20,20 @@ The application uses a relational database with the following structure:
    ```
    docker-compose down
    ```
+
+## Project Structure
+
+- **Frontend**: Vue.js application in `fuel-buddy-project/`
+- **Backend**: Node.js with Express and Sequelize in `fuel-buddy-backend/`
+
+## Database Schema
+
+The application uses a relational database with the following structure:
+
+- **Users**: Store user information
+- **Tasks**: Store task details with creator reference
+- **TaskAssignees**: Junction table for task-user assignments
+
 
 ## Features
 
