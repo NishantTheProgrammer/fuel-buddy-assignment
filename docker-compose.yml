@@ -7,4 +7,23 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
-    container_name: fuel-buddy-frontend 
+    container_name: fuel-buddy-frontend
+    networks:
+      - fuel-buddy-network
+    
+  backend:
+    build:
+      context: ./fuel-buddy-backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    container_name: fuel-buddy-backend
+    networks:
+      - fuel-buddy-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+networks:
+  fuel-buddy-network:
+    driver: bridge 
