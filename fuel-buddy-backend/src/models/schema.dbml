@@ -1,0 +1,30 @@
+// Database schema for Fuel Buddy application
+
+Table Users {
+  id string [pk]
+  name string [not null]
+  email string [unique, not null]
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table Tasks {
+  id integer [pk, increment]
+  title string [not null]
+  description text
+  status enum('pending', 'completed') [default: 'pending']
+  dueDate timestamp
+  userId string [ref: > Users.id]
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table TaskAssignees {
+  taskId integer [pk, ref: > Tasks.id]
+  userId string [pk, ref: > Users.id]
+}
+
+// Relationships
+Ref: Tasks.userId > Users.id // Creator relationship
+Ref: TaskAssignees.taskId > Tasks.id // Many-to-many relationship
+Ref: TaskAssignees.userId > Users.id // Many-to-many relationship 
